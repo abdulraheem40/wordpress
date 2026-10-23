@@ -25,6 +25,7 @@ $replaces = array(
 	'define( '	=> '// define( ',
 	'class wpdb'	=> 'class wpdb2',
 	'new wpdb'	=> 'new wpdb2',
+	'mysqli_'	=> 'wpsql_',
 	'mysql_'	=> 'wpsql_',
 	'<?php'		=> '',
 	'?>'		=> '',

@@ -25,7 +25,33 @@
 	$GLOBALS['pg4wp_last_insert'] = '';
 	$GLOBALS['pg4wp_connstr'] = '';
 	$GLOBALS['pg4wp_conn'] = false;
+	if( !defined('MYSQLI_REPORT_OFF'))
+		define('MYSQLI_REPORT_OFF', 0);
 	
+	function wpsql_report($flags)
+	{
+		return true;
+	}
+	function wpsql_init()
+	{
+		return new stdClass();
+	}
+	function wpsql_real_connect($connection, $host, $user, $pass, $dbname = null, $port = null, $socket = null, $flags = 0)
+	{
+		$dbserver = $host;
+		if( !empty($port))
+			$dbserver .= ':'.$port;
+		wpsql_connect($dbserver, $user, $pass);
+		if( !empty($dbname))
+			return (bool) wpsql_select_db($dbname);
+		return true;
+	}
+	function wpsql_set_charset($connection, $charset)
+	{
+		if( $GLOBALS['pg4wp_conn'])
+			return pg_set_client_encoding($GLOBALS['pg4wp_conn'], $charset) === 0;
+		return false;
+	}
 	function wpsql_num_rows($result)
 		{ return pg_num_rows($result); }
 	function wpsql_numrows($result)
@@ -38,7 +64,7 @@
 		{ return pg_fetch_object($result); }
 	function wpsql_free_result($result)
 		{ return pg_free_result($result); }
-	function wpsql_affected_rows()
+	function wpsql_affected_rows($connection = null)
 	{
 		if( $GLOBALS['pg4wp_result'] === false)
 			return 0;
@@ -49,14 +75,28 @@
 		{ return pg_fetch_row($result); }
 	function wpsql_data_seek($result, $offset)
 		{ return pg_result_seek ( $result, $offset ); }
-	function wpsql_error()
+	function wpsql_error($connection = null)
 		{ if( $GLOBALS['pg4wp_conn']) return pg_last_error(); else return ''; }
 	function wpsql_fetch_assoc($result) { return pg_fetch_assoc($result); }
 	function wpsql_escape_string($s) { return pg_escape_string($s); }
-	function wpsql_real_escape_string($s,$c=NULL) { return pg_escape_string($s); }
-	function wpsql_get_server_info() { return '5.0.30'; } // Just want to fool wordpress ...
+	function wpsql_real_escape_string($connection, $s = null, $c = null)
+	{
+		$data = $s === null ? $connection : $s;
+		return pg_escape_string($data);
+	}
+	function wpsql_get_server_info($connection = null) { return 'PostgreSQL '.$GLOBALS['pg4wp_version']; }
 	function wpsql_result($result, $i, $fieldname)
 		{ return pg_fetch_result($result, $i, $fieldname); }
+	function wpsql_more_results($connection = null) { return false; }
+	function wpsql_next_result($connection = null) { return false; }
+	function wpsql_character_set_name($connection = null) { return 'UTF8'; }
+	function wpsql_close($connection = null)
+	{
+		if( $GLOBALS['pg4wp_conn'])
+			pg_close($GLOBALS['pg4wp_conn']);
+		$GLOBALS['pg4wp_conn'] = false;
+		return true;
+	}
 
 	// This is a fake connection except during installation
 	function wpsql_connect($dbserver, $dbuser, $dbpass)
@@ -89,6 +129,8 @@
 	// The effective connection happens here
 	function wpsql_select_db($dbname, $connection_id = 0)
 	{
+		if( is_string($connection_id) && $connection_id !== '')
+			$dbname = $connection_id;
 		$pg_connstr = $GLOBALS['pg4wp_connstr'].' dbname='.$dbname;
 
 		$GLOBALS['pg4wp_conn'] = pg_connect($pg_connstr);
@@ -134,8 +176,9 @@
 		return $res;
 	}
 	
-	function wpsql_query($sql)
+	function wpsql_query($connection_or_sql, $sql = null)
 	{
+		$sql = $sql === null ? $connection_or_sql : $sql;
 		if( !$GLOBALS['pg4wp_conn'])
 		{
 			// Catch SQL to be executed as soon as connected
@@ -167,7 +210,9 @@
 
 		return $GLOBALS['pg4wp_result'];
 	}
-	
+	function wpsql_connect_errno() { return $GLOBALS['pg4wp_conn'] ? 0 : 1; }
+	function wpsql_connect_error() { return $GLOBALS['pg4wp_conn'] ? '' : 'PostgreSQL connection failed'; }
+	function wpsql_errno($connection = null) { return $GLOBALS['pg4wp_conn'] ? 0 : 1; }
 	function wpsql_insert_id($lnk = NULL)
 	{
 		global $wpdb;
@@ -564,7 +609,7 @@
 			$pattern = '/INSERT INTO ([\w\.]+)\s+\([ a-zA-Z_"]+/';
 			//$GLOBALS['pg4wp_ins_table'] = $matches[1];
 
-			$match_list = split(' ', $matches[0]);
+			$match_list = preg_split('/\s+/', trim($matches[0]));
 			if( $GLOBALS['pg4wp_ins_table'])
 			{
 				$GLOBALS['pg4wp_ins_field'] = trim($match_list[3],' ()	');
