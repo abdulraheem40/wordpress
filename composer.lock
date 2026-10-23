@@ -3,15 +3,36 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies"
     ],
-    "content-hash": "4166f2c7336d3969a53164a2754d9241",
-    "packages": [],
+    "content-hash": "d12836262444005080f4f9f44c680f40",
+    "packages": [
+        {
+            "name": "johnpbloch/wordpress-core-installer",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/johnpbloch/wordpress-core-installer.git",
+                "reference": "2195f2a1eb509f63fa9520970a2569ff45e8b4e7"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "class": "johnpbloch\\WP\\Core\\Installer\\Plugin"
+            },
+            "autoload": {
+                "psr-4": {
+                    "johnpbloch\\WP\\Core\\Installer\\": "src/"
+                }
+            }
+        }
+    ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": [],
-    "prefer-stable": false,
+    "prefer-stable": true,
     "prefer-lowest": false,
-    "platform": {},
+    "platform": {
+        "php": "^8.2"
+    },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }
