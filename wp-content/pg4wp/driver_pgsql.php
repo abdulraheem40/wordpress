@@ -67,6 +67,8 @@
 			$GLOBALS['pg4wp_connstr'] .= ' host='.$hostport[0];
 		if( !empty( $hostport[1]))
 			$GLOBALS['pg4wp_connstr'] .= ' port='.$hostport[1];
+		elseif( defined('DB_PORT') && DB_PORT)
+			$GLOBALS['pg4wp_connstr'] .= ' port='.DB_PORT;
 		if( !empty( $dbuser))
 			$GLOBALS['pg4wp_connstr'] .= ' user='.$dbuser;
 		if( !empty( $dbpass))
@@ -74,6 +76,8 @@
 		elseif( !PG4WP_INSECURE)
 			wp_die( 'Connecting to your PostgreSQL database without a password is considered insecure.
 					<br />If you want to do it anyway, please set "PG4WP_INSECURE" to true in your "db.php" file.' );
+		if( defined('PG4WP_CONNECT_TIMEOUT') && PG4WP_CONNECT_TIMEOUT > 0)
+			$GLOBALS['pg4wp_connstr'] .= ' connect_timeout='.intval(PG4WP_CONNECT_TIMEOUT);
 		
 		// While installing, we test the connection to 'template1' (as we don't know the effective dbname yet)
 		if( defined('WP_INSTALLING') && WP_INSTALLING)
@@ -94,6 +98,14 @@
 			$ver = pg_version($GLOBALS['pg4wp_conn']);
 			if( isset($ver['server']))
 				$GLOBALS['pg4wp_version'] = $ver['server'];
+			if( defined('PG4WP_STATEMENT_TIMEOUT') && PG4WP_STATEMENT_TIMEOUT > 0)
+				pg_query($GLOBALS['pg4wp_conn'], 'SET statement_timeout = '.intval(PG4WP_STATEMENT_TIMEOUT));
+			if( defined('PG4WP_LOCK_TIMEOUT') && PG4WP_LOCK_TIMEOUT > 0)
+				pg_query($GLOBALS['pg4wp_conn'], 'SET lock_timeout = '.intval(PG4WP_LOCK_TIMEOUT));
+		}
+		else
+		{
+			return false;
 		}
 		
 		// Now we should be connected, we "forget" about the connection parameters (if this is not a "test" connection)
@@ -102,8 +114,12 @@
 		
 		// Execute early transmitted commands if needed
 		if( isset($GLOBALS['pg4wp_pre_sql']) && !empty($GLOBALS['pg4wp_pre_sql']))
-			foreach( $GLOBALS['pg4wp_pre_sql'] as $sql2run)
+		{
+			$pre_sql = $GLOBALS['pg4wp_pre_sql'];
+			unset($GLOBALS['pg4wp_pre_sql']);
+			foreach( $pre_sql as $sql2run)
 				wpsql_query( $sql2run);
+		}
 		
 		return $GLOBALS['pg4wp_conn'];
 	}
