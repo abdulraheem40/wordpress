@@ -1,16 +1,5 @@
 {
-  "name": "johnpbloch/wordpress",
-  "description": "WordPress on Heroku with latest security patches",
-  "type": "project",
-  "license": "GPL-2.0-or-later",
-  "require": {
-    "php": "^8.4",
-    "johnpbloch/wordpress-core-installer": "^2.0",
-    "johnpbloch/wordpress-core": "*"
-  },
-  "config": {
-    "allow-plugins": {
-      "johnpbloch/wordpress-core-installer": true
+    "require": {
+        "php": "^8.4"
     }
-  }
 }
