@@ -34,7 +34,10 @@
 	}
 	function wpsql_init()
 	{
-		return new stdClass();
+		$connection = new stdClass();
+		$connection->connect_errno = 0;
+		$connection->connect_error = '';
+		return $connection;
 	}
 	function wpsql_real_connect($connection, $host, $user, $pass, $dbname = null, $port = null, $socket = null, $flags = 0)
 	{
@@ -43,8 +46,12 @@
 			$dbserver .= ':'.$port;
 		wpsql_connect($dbserver, $user, $pass);
 		if( !empty($dbname))
-			return (bool) wpsql_select_db($dbname);
-		return true;
+			$connected = (bool) wpsql_select_db($dbname);
+		else
+			$connected = (bool) wpsql_select_db(DB_NAME);
+		$connection->connect_errno = $connected ? 0 : 1;
+		$connection->connect_error = $connected ? '' : 'PostgreSQL connection failed';
+		return $connected;
 	}
 	function wpsql_set_charset($connection, $charset)
 	{
@@ -168,6 +175,8 @@
 
 	function wpsql_fetch_array($result)
 	{
+		if( !$result)
+			return false;
 		$res = pg_fetch_array($result);
 		
 		if( is_array($res) )
@@ -192,7 +201,7 @@
 		/**
 		 * Run query
 		 */
-		$GLOBALS['pg4wp_result'] = pg_query( $sql );
+		$GLOBALS['pg4wp_result'] = pg_query( $GLOBALS['pg4wp_conn'], $sql );
 
 		// debug
 		if( (PG4WP_DEBUG || PG4WP_LOG_ERRORS) && $GLOBALS['pg4wp_result'] === false && $err = pg_last_error())
@@ -244,7 +253,7 @@
 		{
 			$sql = "SELECT last_value FROM $seq";
 
-			$res = pg_query($sql);
+			$res = pg_query($GLOBALS['pg4wp_conn'], $sql);
 			if( false !== $res) {
 				$data = pg_fetch_result($res, 0, 0);
 			} elseif( PG4WP_DEBUG || PG4WP_ERROR_LOG)
@@ -621,7 +630,7 @@
 		}
 		elseif( isset($GLOBALS['pg4wp_queued_query']))
 		{
-			pg_query($GLOBALS['pg4wp_queued_query']);
+			pg_query($GLOBALS['pg4wp_conn'], $GLOBALS['pg4wp_queued_query']);
 			unset($GLOBALS['pg4wp_queued_query']);
 		}
 		
