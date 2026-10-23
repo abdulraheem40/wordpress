@@ -109,6 +109,8 @@
 	function wpsql_connect($dbserver, $dbuser, $dbpass)
 	{
 		$GLOBALS['pg4wp_connstr'] = '';
+		if( empty($dbserver) && defined('DB_HOST'))
+			$dbserver = DB_HOST;
 		$hostport = explode(':', $dbserver);
 		if( !empty( $hostport[0]))
 			$GLOBALS['pg4wp_connstr'] .= ' host='.$hostport[0];
@@ -188,6 +190,8 @@
 	function wpsql_query($connection_or_sql, $sql = null)
 	{
 		$sql = $sql === null ? $connection_or_sql : $sql;
+		if( false !== stripos($sql, '@@SESSION.sql_mode'))
+			return false;
 		if( !$GLOBALS['pg4wp_conn'])
 		{
 			// Catch SQL to be executed as soon as connected
@@ -276,6 +280,8 @@
 	function pg4wp_rewrite( $sql)
 	{
 		global $wpdb;
+		if( !isset($wpdb) || !is_object($wpdb))
+			return $sql;
 		
 		$logto = 'queries';
 		// The end of the query may be protected against changes
@@ -392,7 +398,7 @@
 			$sql = str_replace( 'post_date_gmt > 1970', 'post_date_gmt > to_timestamp (\'1970\')', $sql);
 			
 			// Akismet sometimes doesn't write 'comment_ID' with 'ID' in capitals where needed ...
-			if( false !== strpos( $sql, $wpdb->comments)) {
+			if( isset($wpdb) && !empty($wpdb->comments) && false !== strpos( $sql, $wpdb->comments)) {
 				$sql = str_replace(' comment_id ', ' comment_ID ', $sql);
 			}
 				

@@ -1,11 +1,12 @@
 <?php
-$url = parse_url(getenv("DATABASE_URL"));
+$database_url = getenv('DATABASE_URL');
+$url = $database_url ? parse_url($database_url) : array();
 
-define('DB_NAME', trim($url["path"], "/"));
-define('DB_USER', $url["user"]);
-define('DB_PASSWORD', $url["pass"]);
-define('DB_HOST', $url["host"]);
-define('DB_PORT', isset($url["port"]) ? $url["port"] : '5432');
+define('DB_NAME', trim(isset($url['path']) ? $url['path'] : getenv('PGDATABASE'), '/'));
+define('DB_USER', isset($url['user']) ? rawurldecode($url['user']) : getenv('PGUSER'));
+define('DB_PASSWORD', isset($url['pass']) ? rawurldecode($url['pass']) : getenv('PGPASSWORD'));
+define('DB_HOST', isset($url['host']) ? $url['host'] : getenv('PGHOST'));
+define('DB_PORT', isset($url['port']) ? $url['port'] : (getenv('PGPORT') ?: '5432'));
 define('DB_CHARSET', 'utf8');
 define('DB_COLLATE', '');
 
