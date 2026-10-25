@@ -1,12 +1,26 @@
 <?php
-$database_url = getenv('DATABASE_URL');
+$database_url = getenv('WORDPRESS_DATABASE_URL') ?: getenv('DATABASE_URL');
 $url = $database_url ? parse_url($database_url) : array();
 
-define('DB_NAME', trim(isset($url['path']) ? $url['path'] : getenv('PGDATABASE'), '/'));
-define('DB_USER', isset($url['user']) ? rawurldecode($url['user']) : getenv('PGUSER'));
-define('DB_PASSWORD', isset($url['pass']) ? rawurldecode($url['pass']) : getenv('PGPASSWORD'));
-define('DB_HOST', isset($url['host']) ? $url['host'] : getenv('PGHOST'));
-define('DB_PORT', isset($url['port']) ? $url['port'] : (getenv('PGPORT') ?: '5432'));
+$db_name = trim(isset($url['path']) ? $url['path'] : getenv('PGDATABASE'), '/');
+$db_user = isset($url['user']) ? rawurldecode($url['user']) : getenv('PGUSER');
+$db_password = isset($url['pass']) ? rawurldecode($url['pass']) : getenv('PGPASSWORD');
+$db_host = isset($url['host']) ? $url['host'] : getenv('PGHOST');
+$db_port = isset($url['port']) ? $url['port'] : (getenv('PGPORT') ?: '5432');
+
+if (!$db_host) {
+    $db_host = 'c89hfa8mgg235.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com';
+}
+
+if (!$db_name || !$db_user || !$db_password) {
+    die('Database configuration is incomplete. Set DATABASE_URL in the application environment and redeploy.');
+}
+
+define('DB_NAME', $db_name);
+define('DB_USER', $db_user);
+define('DB_PASSWORD', $db_password);
+define('DB_HOST', $db_host);
+define('DB_PORT', $db_port);
 define('DB_CHARSET', 'utf8');
 define('DB_COLLATE', '');
 
